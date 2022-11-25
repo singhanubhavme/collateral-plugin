@@ -1,7 +1,7 @@
 import { expect } from 'chai'
 import { ethers } from 'hardhat'
 import { ContractFactory } from 'ethers'
-import { CTokenV3Collateral, InvalidMockV3Aggregator, MockV3Aggregator } from '../../typechain-types'
+import { CTokenV3Collateral, InvalidMockV3Aggregator, MockV3Aggregator } from '../typechain-types'
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers'
 import {
   // USDC_USD_PRICE_FEED,
@@ -25,6 +25,7 @@ import {
   allocateERC20,
   ETH_USD_PRICE_FEED,
   CBETH,
+  ETH_DECIMALS,
 } from './helpers'
 import { deployCollateral, makeCollateralFactory } from './fixtures'
 
@@ -40,15 +41,14 @@ describe('constructor validation', () => {
       CbETHCollateral.deploy(
         1,
         ETH_USD_PRICE_FEED,
-        CUSDC_V3,
-        COMP,
+        ETH_USD_PRICE_FEED,
+        CBETH,
         RTOKEN_MAX_TRADE_VOL,
         ORACLE_TIMEOUT,
         ethers.constants.HashZero,
         DEFAULT_THRESHOLD,
         DELAY_UNTIL_DEFAULT,
-        REWARDS,
-        USDC_DECIMALS
+        ETH_DECIMALS
       )
     ).to.be.revertedWith('targetName missing')
   })
@@ -58,15 +58,14 @@ describe('constructor validation', () => {
       CbETHCollateral.deploy(
         1,
         ETH_USD_PRICE_FEED,
-        CUSDC_V3,
-        COMP,
+        ETH_USD_PRICE_FEED,
+        CBETH,
         RTOKEN_MAX_TRADE_VOL,
         ORACLE_TIMEOUT,
-        ethers.utils.formatBytes32String('USD'),
+        ethers.utils.formatBytes32String('ETH'),
         0,
         DELAY_UNTIL_DEFAULT,
-        REWARDS,
-        USDC_DECIMALS
+        ETH_DECIMALS
       )
     ).to.be.revertedWith('defaultThreshold zero')
   })
@@ -76,35 +75,16 @@ describe('constructor validation', () => {
       CbETHCollateral.deploy(
         1,
         ETH_USD_PRICE_FEED,
-        CUSDC_V3,
-        COMP,
+        ETH_USD_PRICE_FEED,
+        CBETH,
         RTOKEN_MAX_TRADE_VOL,
         ORACLE_TIMEOUT,
-        ethers.utils.formatBytes32String('USD'),
+        ethers.utils.formatBytes32String('ETH'),
         DEFAULT_THRESHOLD,
         0,
-        REWARDS,
-        USDC_DECIMALS
+        ETH_DECIMALS
       )
     ).to.be.revertedWith('delayUntilDefault zero')
-  })
-
-  it('does not allow missing rewardERC20', async () => {
-    await expect(
-      CbETHCollateral.deploy(
-        1,
-        ETH_USD_PRICE_FEED,
-        CUSDC_V3,
-        ZERO_ADDRESS,
-        RTOKEN_MAX_TRADE_VOL,
-        ORACLE_TIMEOUT,
-        ethers.utils.formatBytes32String('USD'),
-        DEFAULT_THRESHOLD,
-        DELAY_UNTIL_DEFAULT,
-        REWARDS,
-        USDC_DECIMALS
-      )
-    ).to.be.revertedWith('rewardERC20 missing')
   })
 
   it('does not allow missing referenceERC20Decimals', async () => {
@@ -112,35 +92,16 @@ describe('constructor validation', () => {
       CbETHCollateral.deploy(
         1,
         ETH_USD_PRICE_FEED,
-        CUSDC_V3,
-        COMP,
+        ETH_USD_PRICE_FEED,
+        CBETH,
         RTOKEN_MAX_TRADE_VOL,
         ORACLE_TIMEOUT,
-        ethers.utils.formatBytes32String('USD'),
+        ethers.utils.formatBytes32String('ETH'),
         DEFAULT_THRESHOLD,
         DELAY_UNTIL_DEFAULT,
-        REWARDS,
         0
       )
     ).to.be.revertedWith('referenceERC20Decimals missing')
-  })
-
-  it('Should not allow missing rewardsAddr', async () => {
-    await expect(
-      CbETHCollateral.deploy(
-        1,
-        ETH_USD_PRICE_FEED,
-        CUSDC_V3,
-        COMP,
-        RTOKEN_MAX_TRADE_VOL,
-        ORACLE_TIMEOUT,
-        ethers.utils.formatBytes32String('USD'),
-        DEFAULT_THRESHOLD,
-        DELAY_UNTIL_DEFAULT,
-        ZERO_ADDRESS,
-        USDC_DECIMALS
-      )
-    ).to.be.revertedWith('rewardsAddr missing')
   })
 })
 

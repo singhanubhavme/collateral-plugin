@@ -54,6 +54,7 @@ contract CbETHCollateral is Collateral {
         bytes32 targetName_,
         uint192 defaultThreshold_,
         uint256 delayUntilDefault_,
+        // no rewards
         int8 referenceERC20Decimals_,
         // IComptroller comptroller_
     )

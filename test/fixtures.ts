@@ -1,5 +1,6 @@
 import { ethers } from 'hardhat'
 import { ContractFactory, Event } from 'ethers'
+
 import {
   DEFAULT_THRESHOLD,
   DELAY_UNTIL_DEFAULT,
@@ -15,7 +16,11 @@ import {
   FIX_ONE,
   USDC,
   exp,
+  RSR_PRICE_FEED,
+  GNOSIS_EASY_AUCTION,
+  CBETH,
 } from './helpers'
+
 import {
   AggregatorV3Interface,
   GnosisMock,
@@ -47,15 +52,12 @@ import {
   ERC20Mock,
   Asset,
   OracleLib,
-  CTokenV3Collateral,
+  CTokenV3Collateral as CollateralContract,
   MockV3Aggregator,
   CometInterface,
   CusdcV3Wrapper,
   CusdcV3Wrapper__factory,
 } from '../typechain-types'
-
-const RSR_PRICE_FEED = '0x759bBC1be8F90eE6457C44abc7d443842a976d02'
-const GNOSIS_EASY_AUCTION = '0x0b7fFc1f4AD541A4Ed16b40D8c37f0929158D101'
 
 interface GnosisFixture {
   gnosis: GnosisMock
@@ -92,16 +94,6 @@ interface IImplementations {
 
 export const deployReserveProtocol = async () => {
   // Setup Assets
-  const compAsset = <Asset>await (
-    await ethers.getContractFactory('Asset')
-  ).deploy(
-    FIX_ONE,
-    '0xdbd020CAeF83eFd542f4De03e3cF0C28A4428bd5',
-    COMP,
-    ZERO_ADDRESS, // also uncertain about this one
-    RTOKEN_MAX_TRADE_VOL,
-    ORACLE_TIMEOUT
-  )
 
   const rsrAsset = <Asset>await (
     await ethers.getContractFactory('Asset')
@@ -113,10 +105,21 @@ export const deployReserveProtocol = async () => {
     RTOKEN_MAX_TRADE_VOL,
     ORACLE_TIMEOUT
   )
-
-  // Setup ERC20 mocks
   const rsr = <ERC20Mock>await ethers.getContractAt('ERC20Mock', RSR)
-  const compToken = <ERC20Mock>await ethers.getContractAt('ERC20Mock', COMP)
+
+  // ---- Add here reward assets that we claim, example below  ----
+
+  // const compAsset = <Asset>await (
+  //   await ethers.getContractFactory('Asset')
+  // ).deploy(
+  //   FIX_ONE,
+  //   '0xdbd020CAeF83eFd542f4De03e3cF0C28A4428bd5',
+  //   COMP,
+  //   ZERO_ADDRESS, // also uncertain about this one
+  //   RTOKEN_MAX_TRADE_VOL,
+  //   ORACLE_TIMEOUT
+  // )
+  // const compToken = <ERC20Mock>await ethers.getContractAt('ERC20Mock', COMP)
 
   // Deploy implementations
   const MainImplFactory: ContractFactory = await ethers.getContractFactory('MainP1')
@@ -266,7 +269,7 @@ export const deployReserveProtocol = async () => {
   const { collateral, chainlinkFeed, cusdcV3 } = await deployCollateral()
 
   // Register an Asset and a Collateral
-  await assetRegistry.connect(owner).register(compAsset.address)
+  // await assetRegistry.connect(owner).register(compAsset.address)
   await assetRegistry.connect(owner).register(collateral.address)
 
   // Set initial Basket
@@ -287,9 +290,9 @@ export const deployReserveProtocol = async () => {
     facade,
     rToken,
     rsrAsset,
-    compAsset,
+    // compAsset,
     rsr,
-    compToken,
+    // compToken,
     facadeTest,
     cusdcV3,
     backingManager,
@@ -299,79 +302,57 @@ export const deployReserveProtocol = async () => {
 export const makeCollateralFactory = async (): Promise<ContractFactory> => {
   const OracleLibFactory: ContractFactory = await ethers.getContractFactory('OracleLib')
   const oracleLib: OracleLib = <OracleLib>await OracleLibFactory.deploy()
-  const CTokenV3CollateralFactory: ContractFactory = await ethers.getContractFactory(
-    'CTokenV3Collateral',
+  const collateralFactory: ContractFactory = await ethers.getContractFactory(
+    'CTokenV3Collateral', // todo: collateral contract name
     {
       libraries: { OracleLib: oracleLib.address },
     }
   )
 
-  return CTokenV3CollateralFactory
+  return collateralFactory
 }
 
 interface Collateral {
-  collateral: CTokenV3Collateral
-  chainlinkFeed: AggregatorV3Interface
-}
-
-interface CollateralWithMockFeed {
-  collateral: CTokenV3Collateral
+  collateral: CollateralContract
   chainlinkFeed: MockV3Aggregator
   cusdcV3: CometInterface
   wcusdcV3: CusdcV3Wrapper
   usdc: ERC20Mock
 }
 
-export const deployCollateralWithFeed = async (): Promise<Collateral> => {
-  const chainlinkFeed = await ethers.getContractAt('AggregatorV3Interface', USDC_USD_PRICE_FEED)
-  const CTokenV3CollateralFactory = await makeCollateralFactory()
-  const collateral = <CTokenV3Collateral>(
-    await CTokenV3CollateralFactory.deploy(
-      1,
-      chainlinkFeed.address,
-      CUSDC_V3,
-      COMP,
-      RTOKEN_MAX_TRADE_VOL,
-      ORACLE_TIMEOUT,
-      ethers.utils.formatBytes32String('USD'),
-      DEFAULT_THRESHOLD,
-      DELAY_UNTIL_DEFAULT,
-      REWARDS,
-      USDC_DECIMALS
-    )
-  )
-  await collateral.deployed()
-  return { collateral, chainlinkFeed }
-}
+export const deployCollateral = async (): Promise<Collateral> => {
+  // todo: custom data
+  const { cusdcV3, wcusdcV3, usdc } = await makewCSUDC()
 
-export const deployCollateral = async (): Promise<CollateralWithMockFeed> => {
   const MockV3AggregatorFactory: ContractFactory = await ethers.getContractFactory(
     'MockV3Aggregator'
   )
+
+  // deploying USDC price feed - with price = 1**6 (usdc have 6 decimals), we are deploying our price feed so we can update it in test for various situations
   const chainlinkFeed: MockV3Aggregator = <MockV3Aggregator>(
     await MockV3AggregatorFactory.deploy(6, exp(1, 6))
   )
-  const { cusdcV3, wcusdcV3, usdc } = await makewCSUDC()
-  const CTokenV3CollateralFactory = await makeCollateralFactory()
-  const collateral = <CTokenV3Collateral>(
-    await CTokenV3CollateralFactory.deploy(
-      1,
-      chainlinkFeed.address,
-      wcusdcV3.address,
-      COMP,
-      RTOKEN_MAX_TRADE_VOL,
-      ORACLE_TIMEOUT,
-      ethers.utils.formatBytes32String('USD'),
-      DEFAULT_THRESHOLD,
-      DELAY_UNTIL_DEFAULT,
-      REWARDS,
-      USDC_DECIMALS
-    )
+
+  const collateralFactory = await makeCollateralFactory()
+  const collateral = <CollateralContract>await collateralFactory.deploy(
+    // todo : deploy params //
+    1,
+    chainlinkFeed.address,
+    wcusdcV3.address,
+    COMP,
+    RTOKEN_MAX_TRADE_VOL,
+    ORACLE_TIMEOUT,
+    ethers.utils.formatBytes32String('USD'),
+    DEFAULT_THRESHOLD,
+    DELAY_UNTIL_DEFAULT,
+    REWARDS,
+    USDC_DECIMALS
   )
   await collateral.deployed()
   return { collateral, chainlinkFeed, cusdcV3, wcusdcV3, usdc }
 }
 
+// todo: write any custom functions below
 export const makewCSUDC = async () => {
   const cusdcV3 = <CometInterface>await ethers.getContractAt('CometInterface', CUSDC_V3)
   const CusdcV3WrapperFactory = <CusdcV3Wrapper__factory>(
