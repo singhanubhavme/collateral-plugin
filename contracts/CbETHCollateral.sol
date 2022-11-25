@@ -95,7 +95,6 @@ contract CbETHCollateral is Collateral {
     /// @custom:interaction RCEI
     function refresh() external virtual override {
         // == Refresh ==
-        // Update the Coinbase Protocol
         ICbETH(address(erc20)).exchangeRate();
 
         if (alreadyDefaulted()) return;
