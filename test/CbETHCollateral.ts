@@ -4,17 +4,13 @@ import { ContractFactory } from 'ethers'
 import { CTokenV3Collateral, InvalidMockV3Aggregator, MockV3Aggregator } from '../typechain-types'
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers'
 import {
-  // USDC_USD_PRICE_FEED,
   USDC,
   USDC_HOLDER,
   CUSDC_V3,
-  COMP,
   RTOKEN_MAX_TRADE_VOL,
   ORACLE_TIMEOUT,
   DEFAULT_THRESHOLD,
   DELAY_UNTIL_DEFAULT,
-  REWARDS,
-  USDC_DECIMALS,
   ZERO_ADDRESS,
   CollateralStatus,
   MAX_UINT256,
@@ -29,6 +25,15 @@ import {
 } from './helpers'
 import { deployCollateral, makeCollateralFactory } from './fixtures'
 
+/* types of test :
+  1) constructor validation - test with wrong parameters and it should revert with errors (done)
+  2) price - check find on different situations, you change price and try to check if the 
+     exchangeRate(refPerTok, strictPrice, etc.) are equal to your expectations
+  3) status - Check if status changes on different situations. Example of situtions
+     (a) When everything is normal 
+     (b) When the USDC move from its peg
+*/
+
 describe('constructor validation', () => {
   let CbETHCollateral: ContractFactory
 
@@ -36,11 +41,90 @@ describe('constructor validation', () => {
     CbETHCollateral = await makeCollateralFactory()
   })
 
-  it('validates targetName correctly', async () => {
+  it('does not allow zero fallbackPrice', async () => {
+    await expect(
+      CbETHCollateral.deploy(
+        0,
+        ETH_USD_PRICE_FEED,
+        CBETH,
+        RTOKEN_MAX_TRADE_VOL,
+        ORACLE_TIMEOUT,
+        ethers.utils.formatBytes32String('ETH'),
+        DEFAULT_THRESHOLD,
+        DELAY_UNTIL_DEFAULT,
+        ETH_DECIMALS
+      )
+    ).to.be.revertedWith('fallback price zero')
+  })
+
+  it('does not allow zero address targetUnitChainlinkFeed', async () => {
+    await expect(
+      CbETHCollateral.deploy(
+        1,
+        ZERO_ADDRESS,
+        CBETH,
+        RTOKEN_MAX_TRADE_VOL,
+        ORACLE_TIMEOUT,
+        ethers.utils.formatBytes32String('ETH'),
+        DEFAULT_THRESHOLD,
+        DELAY_UNTIL_DEFAULT,
+        ETH_DECIMALS
+      )
+    ).to.be.revertedWith('missing chainlink feed')
+  })
+
+  it('does not allow zero address erc20metadata', async () => {
     await expect(
       CbETHCollateral.deploy(
         1,
         ETH_USD_PRICE_FEED,
+        ZERO_ADDRESS,
+        RTOKEN_MAX_TRADE_VOL,
+        ORACLE_TIMEOUT,
+        ethers.utils.formatBytes32String('ETH'),
+        DEFAULT_THRESHOLD,
+        DELAY_UNTIL_DEFAULT,
+        ETH_DECIMALS
+      )
+    ).to.be.revertedWith('missing erc20')
+  })
+
+  it('validates maxTradeVolume', async () => {
+    await expect(
+      CbETHCollateral.deploy(
+        1,
+        ETH_USD_PRICE_FEED,
+        CBETH,
+        0,
+        ORACLE_TIMEOUT,
+        ethers.utils.formatBytes32String('ETH'),
+        DEFAULT_THRESHOLD,
+        DELAY_UNTIL_DEFAULT,
+        ETH_DECIMALS
+      )
+    ).to.be.revertedWith('invalid max trade volume')
+  })
+
+  it('validates oracleTimeout', async () => {
+    await expect(
+      CbETHCollateral.deploy(
+        1,
+        ETH_USD_PRICE_FEED,
+        CBETH,
+        RTOKEN_MAX_TRADE_VOL,
+        0,
+        ethers.utils.formatBytes32String('ETH'),
+        DEFAULT_THRESHOLD,
+        DELAY_UNTIL_DEFAULT,
+        ETH_DECIMALS
+      )
+    ).to.be.revertedWith('oracleTimeout zero')
+  })
+
+  it('validates targetName correctly', async () => {
+    await expect(
+      CbETHCollateral.deploy(
+        1,
         ETH_USD_PRICE_FEED,
         CBETH,
         RTOKEN_MAX_TRADE_VOL,
@@ -58,7 +142,6 @@ describe('constructor validation', () => {
       CbETHCollateral.deploy(
         1,
         ETH_USD_PRICE_FEED,
-        ETH_USD_PRICE_FEED,
         CBETH,
         RTOKEN_MAX_TRADE_VOL,
         ORACLE_TIMEOUT,
@@ -75,7 +158,6 @@ describe('constructor validation', () => {
       CbETHCollateral.deploy(
         1,
         ETH_USD_PRICE_FEED,
-        ETH_USD_PRICE_FEED,
         CBETH,
         RTOKEN_MAX_TRADE_VOL,
         ORACLE_TIMEOUT,
@@ -91,7 +173,6 @@ describe('constructor validation', () => {
     await expect(
       CbETHCollateral.deploy(
         1,
-        ETH_USD_PRICE_FEED,
         ETH_USD_PRICE_FEED,
         CBETH,
         RTOKEN_MAX_TRADE_VOL,
