@@ -2,10 +2,11 @@
 pragma solidity 0.8.9;
 
 import "@openzeppelin/contracts/utils/math/Math.sol";
-import "contracts/plugins/assets/AbstractCollateral.sol";
-import "contracts/plugins/assets/OracleLib.sol";
-import "contracts/libraries/Fixed.sol";
-import "./ICbETH.sol";
+// import "contracts/plugins/assets/AbstractCollateral.sol";
+import "./AbstractCollateral.sol";
+// import "reserve/contracts/plugins/assets/OracleLib.sol";
+import "reserve/contracts/libraries/Fixed.sol";
+import "./interfaces/ICbETH.sol";
 
 /**
  * @title CbETHCollateral
@@ -49,7 +50,7 @@ contract CbETHCollateral is Collateral {
         bytes32 targetName_,
         uint192 defaultThreshold_,
         uint256 delayUntilDefault_,
-        int8 referenceERC20Decimals_,
+        int8 referenceERC20Decimals_
     )
         Collateral(
             fallbackPrice_,
@@ -141,7 +142,7 @@ contract CbETHCollateral is Collateral {
         return rate;
     }
 
-    // @return {target/ref} 
+    /// @return {target/ref} 
     function targetPerRef() public view virtual returns(uint192) {
         return FIX_ONE;
     }

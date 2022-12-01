@@ -318,6 +318,7 @@ interface Collateral {
   cusdcV3: CometInterface
   wcusdcV3: CusdcV3Wrapper
   usdc: ERC20Mock
+  // cbeth: ERC20Mock
 }
 
 export const deployCollateral = async (): Promise<Collateral> => {

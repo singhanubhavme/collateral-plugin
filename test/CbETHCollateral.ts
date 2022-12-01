@@ -187,7 +187,7 @@ describe('constructor validation', () => {
 })
 
 describe('prices', () => {
-  it('prices change as USDC feed price changes', async () => {
+  it('prices change as cbETH feed price changes', async () => {
     const { collateral, chainlinkFeed } = await loadFixture(deployCollateral)
     const { answer } = await chainlinkFeed.latestRoundData()
     const decimals = await chainlinkFeed.decimals()
@@ -213,26 +213,26 @@ describe('prices', () => {
   })
 
   it('prices change as refPerTok changes', async () => {
-    const { collateral, usdc, cusdcV3, wcusdcV3 } = await loadFixture(deployCollateral)
+    const { collateral, cbeth } = await loadFixture(deployCollateral)
     const prevRefPerTok = await collateral.refPerTok()
     const prevPrice = await collateral.strictPrice()
     expect(prevRefPerTok).to.equal(exp(1, 18))
     expect(prevPrice).to.equal(exp(1, 18))
 
     const [_, bob] = await ethers.getSigners()
-    const usdcAsB = usdc.connect(bob)
-    const cusdcV3AsB = cusdcV3.connect(bob)
-    const wcusdcV3AsB = wcusdcV3.connect(bob)
+    const cbETHAsB = cbeth.connect(bob)
+    // const cusdcV3AsB = cusdcV3.connect(bob)
+    // const wcusdcV3AsB = wcusdcV3.connect(bob)
 
     const balance = 20000e6
-    await allocateERC20(usdc, USDC_HOLDER, bob.address, balance)
+    await allocateERC20(cbeth, USDC_HOLDER, bob.address, balance)
 
-    await usdcAsB.approve(CUSDC_V3, ethers.constants.MaxUint256)
-    await cusdcV3AsB.supply(USDC, balance)
-    expect(await usdc.balanceOf(bob.address)).to.equal(0)
+    // await usdcAsB.approve(CUSDC_V3, ethers.constants.MaxUint256)
+    // await cusdcV3AsB.supply(USDC, balance)
+    expect(await cbeth.balanceOf(bob.address)).to.equal(0)
 
-    await cusdcV3AsB.allow(wcusdcV3.address, true)
-    await wcusdcV3AsB.depositFor(bob.address, ethers.constants.MaxUint256)
+    // await cusdcV3AsB.allow(wcusdcV3.address, true)
+    // await wcusdcV3AsB.depositFor(bob.address, ethers.constants.MaxUint256)
     expect(await collateral.refPerTok()).to.not.equal(prevRefPerTok)
     expect(await collateral.strictPrice()).to.not.equal(prevPrice)
   })
