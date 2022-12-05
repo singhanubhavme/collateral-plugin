@@ -3,9 +3,11 @@ pragma solidity 0.8.9;
 
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
-import "reserve/contracts/interfaces/IAsset.sol";
-import "./Asset.sol";
-import "./OracleLib.sol";
+// import "reserve/contracts/interfaces/IAsset.sol";
+import "reserve/contracts/plugins/assets/Asset.sol";
+import "reserve/contracts/plugins/assets/OracleLib.sol";
+// import "./Asset.sol";
+// import "./OracleLib.sol";
 
 /**
  * @title Collateral
@@ -15,6 +17,8 @@ import "./OracleLib.sol";
  */
 abstract contract Collateral is ICollateral, Asset {
     using OracleLib for AggregatorV3Interface;
+
+    event DefaultStatusChanged(CollateralStatus, CollateralStatus);
 
     // Default Status:
     // _whenDefault == NEVER: no risk of default (initial value)

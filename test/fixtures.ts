@@ -19,6 +19,8 @@ import {
   RSR_PRICE_FEED,
   GNOSIS_EASY_AUCTION,
   CBETH,
+  ETH_DECIMALS,
+  ETH_USD_PRICE_FEED,
 } from './helpers'
 
 import {
@@ -303,7 +305,20 @@ export const makeCollateralFactory = async (): Promise<ContractFactory> => {
   const OracleLibFactory: ContractFactory = await ethers.getContractFactory('OracleLib')
   const oracleLib: OracleLib = <OracleLib>await OracleLibFactory.deploy()
   const collateralFactory: ContractFactory = await ethers.getContractFactory(
-    'CTokenV3Collateral', // todo: collateral contract name
+    'CTokenV3Collateral',
+    {
+      libraries: { OracleLib: oracleLib.address },
+    }
+  )
+
+  return collateralFactory
+}
+
+export const makeCbETHCollateralFactory = async (): Promise<ContractFactory> => {
+  const OracleLibFactory: ContractFactory = await ethers.getContractFactory('OracleLib')
+  const oracleLib: OracleLib = <OracleLib>await OracleLibFactory.deploy()
+  const collateralFactory: ContractFactory = await ethers.getContractFactory(
+    'CbETHCollateral',
     {
       libraries: { OracleLib: oracleLib.address },
     }

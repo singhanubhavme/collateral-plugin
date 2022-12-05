@@ -1,12 +1,10 @@
 import { expect } from 'chai'
 import { ethers } from 'hardhat'
 import { ContractFactory } from 'ethers'
-import { CTokenV3Collateral, InvalidMockV3Aggregator, MockV3Aggregator } from '../typechain-types'
+import { contracts, CTokenV3Collateral, InvalidMockV3Aggregator, MockV3Aggregator } from '../typechain-types'
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers'
 import {
-  USDC,
   USDC_HOLDER,
-  CUSDC_V3,
   RTOKEN_MAX_TRADE_VOL,
   ORACLE_TIMEOUT,
   DEFAULT_THRESHOLD,
@@ -23,7 +21,7 @@ import {
   CBETH,
   ETH_DECIMALS,
 } from './helpers'
-import { deployCollateral, makeCollateralFactory } from './fixtures'
+import { deployCollateral, makeCbETHCollateralFactory } from './fixtures'
 
 /* types of test :
   1) constructor validation - test with wrong parameters and it should revert with errors (done)
@@ -38,7 +36,7 @@ describe('constructor validation', () => {
   let CbETHCollateral: ContractFactory
 
   beforeEach(async () => {
-    CbETHCollateral = await makeCollateralFactory()
+    CbETHCollateral = await makeCbETHCollateralFactory()
   })
 
   it('does not allow zero fallbackPrice', async () => {
@@ -355,18 +353,16 @@ describe('status', () => {
       await InvalidMockV3AggregatorFactory.deploy(6, 1n * 10n ** 6n)
     )
 
-    const CbETHCollateral = await makeCollateralFactory()
+    const CbETHCollateral = await makeCbETHCollateralFactory()
     const invalidCollateral = await CbETHCollateral.deploy(
       1,
       invalidChainlinkFeed.address,
       await collateral.erc20(),
-      await collateral.rewardERC20(),
       await collateral.maxTradeVolume(),
       await collateral.oracleTimeout(),
       await collateral.targetName(),
       await collateral.defaultThreshold(),
       await collateral.delayUntilDefault(),
-      await collateral.rewardsAddr(),
       await collateral.referenceERC20Decimals()
     )
 

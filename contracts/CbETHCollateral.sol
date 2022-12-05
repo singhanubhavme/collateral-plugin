@@ -139,11 +139,11 @@ contract CbETHCollateral is Collateral {
     /// @return {ref/tok} Quantity of whole reference units per whole collateral tokens
     function refPerTok() public view override returns (uint192) {
         uint256 rate = ICbETH(address(erc20)).exchangeRate();
-        return rate;
+        return uint192(rate);
     }
 
     /// @return {target/ref} 
-    function targetPerRef() public view virtual returns(uint192) {
+    function targetPerRef() public pure override returns(uint192) {
         return FIX_ONE;
     }
 
